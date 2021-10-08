@@ -5,9 +5,15 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     //Inspector Variables
-    [SerializeField] private float moveSpeed = 1f;
+    [SerializeField] private float groundMoveSpeed = 1f;
+    [SerializeField] private float aerialMobility = 1f;
     [SerializeField] private float jumpHeight = 1f;
     [SerializeField] private float speedLimit = 1f;
+    [SerializeField] private float fallVelocity = 1f;
+    [SerializeField] private float fastFallSpeed = 1f;
+    [SerializeField] private float waveDashDistance = 1f;
+    [SerializeField] private float slidyness = 2f;
+    [SerializeField] private float defaultFriction = 10f;
     [SerializeField] private ParticleSystem dustParticle;
 
     //cache
@@ -25,7 +31,10 @@ public class PlayerController : MonoBehaviour
     private bool isJumping = false;
     private float faceRight = 1f;
     private float moveHorizontal;
+    private float moveVertical;
     private float jumpVertical;
+    private bool moveDiagonal;
+    private bool waveDashState = false;
 
     // Start is called before the first frame update
     void Start()
@@ -39,17 +48,42 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         moveHorizontal = Input.GetAxisRaw("Horizontal");
-        jumpVertical = Input.GetAxisRaw("Vertical");
+        moveVertical = Input.GetAxisRaw("Vertical");
+        jumpVertical = Input.GetAxisRaw("Jump");
+        moveDiagonal = Input.GetButtonDown("Fire1");
 
         RunningAnimation(moveHorizontal);
         JumpAnimation(jumpVertical); //Handles Jump and Land Animations
         LimitSpeed(speedLimit);
+
+        if (moveDiagonal == true) { WaveDash(moveHorizontal, moveVertical); }
     }
 
     private void FixedUpdate()
     {
-        PlayerMoveHorizontal(moveHorizontal);
-        Jump(jumpVertical);
+        if(waveDashState == false)
+        {
+            PlayerMoveHorizontal(moveHorizontal);
+            Jump(jumpVertical);
+            FallFast(fallVelocity);
+            FastFall(fastFallSpeed);
+        }
+    }
+
+    private void FallFast(float fallVelocity) //determines general falling speed
+    {
+        if(isJumping == true && myRigidBody.velocity.y <= 0)
+        {
+            myRigidBody.AddForce(new Vector2(0f, -fallVelocity), ForceMode2D.Force);
+        }
+    }
+
+    private void FastFall(float fastFallSpeed) //determines fast fall speed when pressing down key (akin to Melee)
+    {
+        if(isJumping == true && myRigidBody.velocity.y < 0 && moveVertical < 0)
+        {
+            myRigidBody.AddForce(new Vector2(0f, -fastFallSpeed), ForceMode2D.Impulse);
+        }
     }
 
     private void RunningAnimation(float input)
@@ -93,15 +127,21 @@ public class PlayerController : MonoBehaviour
 
     private void PlayerMoveHorizontal(float input)
     {
-        if (input > 0)
+        if (input > 0 && isJumping == false)
         {
-            myRigidBody.AddForce(new Vector2(moveSpeed, 0f), ForceMode2D.Force);
-            //LimitSpeed(speedLimit);
+            myRigidBody.AddForce(new Vector2(groundMoveSpeed, 0f), ForceMode2D.Force);
         }
-        else if (input < 0)
+        else if (input < 0 && isJumping == false)
         {
-            myRigidBody.AddForce(new Vector2(-moveSpeed, 0f), ForceMode2D.Force);
-            //LimitSpeed(speedLimit);
+            myRigidBody.AddForce(new Vector2(-groundMoveSpeed, 0f), ForceMode2D.Force);
+        }
+        else if (input > 0 && isJumping == true)
+        {
+            myRigidBody.AddForce(new Vector2(aerialMobility, 0f), ForceMode2D.Force);
+        }
+        else if (input < 0 && isJumping == true)
+        {
+            myRigidBody.AddForce(new Vector2(-aerialMobility, 0f), ForceMode2D.Force);
         }
     }
 
@@ -141,5 +181,35 @@ public class PlayerController : MonoBehaviour
         {
             myRigidBody.AddForce(new Vector2(0f, jumpHeight), ForceMode2D.Impulse);
         }
+    }
+
+    private void WaveDash(float inputX, float inputY)
+    {
+        if(isJumping == true)
+        {
+            waveDashState = true;
+            myBoxCollider.sharedMaterial.friction = slidyness;
+            myBoxCollider.enabled = false;
+            myBoxCollider.enabled = true;
+            
+            if(inputX > 0 && inputY < 0)
+            {
+                myRigidBody.AddForce(new Vector2(waveDashDistance, -waveDashDistance), ForceMode2D.Impulse);
+            }
+            else if(inputX < 0 && inputY < 0)
+            {
+                myRigidBody.AddForce(new Vector2(-waveDashDistance, -waveDashDistance), ForceMode2D.Impulse);
+            }
+        }
+        StartCoroutine(WaveDashLag());
+    }
+
+    IEnumerator WaveDashLag()
+    {
+        yield return new WaitForSeconds(0.5f);
+        myBoxCollider.sharedMaterial.friction = defaultFriction;
+        myBoxCollider.enabled = false;
+        myBoxCollider.enabled = true;
+        waveDashState = false;
     }
 }
