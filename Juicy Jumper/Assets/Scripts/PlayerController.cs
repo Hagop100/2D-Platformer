@@ -11,7 +11,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float speedLimit = 1f;
     [SerializeField] private float fallVelocity = 1f;
     [SerializeField] private float fastFallSpeed = 1f;
-    [SerializeField] private float waveDashDistance = 1f;
+    [SerializeField] private float waveDashForce = 1f;
     [SerializeField] private float slidyness = 2f;
     [SerializeField] private float defaultFriction = 10f;
     [SerializeField] private ParticleSystem dustParticle;
@@ -56,12 +56,12 @@ public class PlayerController : MonoBehaviour
         JumpAnimation(jumpVertical); //Handles Jump and Land Animations
         LimitSpeed(speedLimit);
 
-        if (moveDiagonal == true) { WaveDash(moveHorizontal, moveVertical); }
+        if (moveDiagonal) { WaveDash(moveHorizontal, moveVertical); }
     }
 
     private void FixedUpdate()
     {
-        if(waveDashState == false)
+        if (waveDashState == false)
         {
             PlayerMoveHorizontal(moveHorizontal);
             Jump(jumpVertical);
@@ -187,21 +187,27 @@ public class PlayerController : MonoBehaviour
     {
         if(isJumping == true)
         {
-            waveDashState = true;
-            myBoxCollider.sharedMaterial.friction = slidyness;
-            myBoxCollider.enabled = false;
-            myBoxCollider.enabled = true;
-            
             if(inputX > 0 && inputY < 0)
             {
-                myRigidBody.AddForce(new Vector2(waveDashDistance, -waveDashDistance), ForceMode2D.Impulse);
+                waveDashState = true;
+                myBoxCollider.sharedMaterial.friction = slidyness;
+                myBoxCollider.enabled = false;
+                myBoxCollider.enabled = true;
+                //myRigidBody.velocity = new Vector2(0f, 0f);
+                myRigidBody.AddForce(new Vector2(waveDashForce, -waveDashForce), ForceMode2D.Impulse);
+                StartCoroutine(WaveDashLag());
             }
             else if(inputX < 0 && inputY < 0)
             {
-                myRigidBody.AddForce(new Vector2(-waveDashDistance, -waveDashDistance), ForceMode2D.Impulse);
+                waveDashState = true;
+                myBoxCollider.sharedMaterial.friction = slidyness;
+                myBoxCollider.enabled = false;
+                myBoxCollider.enabled = true;
+                //myRigidBody.velocity = new Vector2(0f, 0f);
+                myRigidBody.AddForce(new Vector2(-waveDashForce, -waveDashForce), ForceMode2D.Impulse);
+                StartCoroutine(WaveDashLag());
             }
-        }
-        StartCoroutine(WaveDashLag());
+        } 
     }
 
     IEnumerator WaveDashLag()

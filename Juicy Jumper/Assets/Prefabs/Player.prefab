@@ -98,7 +98,7 @@ Rigidbody2D:
   m_AngularDrag: 0.05
   m_GravityScale: 2
   m_Material: {fileID: 0}
-  m_Interpolate: 0
+  m_Interpolate: 1
   m_SleepingMode: 1
   m_CollisionDetection: 1
   m_Constraints: 4
@@ -114,14 +114,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9dcc67ca7246c924ab7674c6f1ec8f97, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  groundMoveSpeed: 80
+  groundMoveSpeed: 150
   aerialMobility: 40
   jumpHeight: 5
   speedLimit: 9
   fallVelocity: 30
   fastFallSpeed: 3
-  waveDashDistance: 25
-  slidyness: 0.1
+  waveDashForce: 100
+  slidyness: 0
   defaultFriction: 10
   dustParticle: {fileID: 3698900564915667664}
 --- !u!1 &1419782609685335912
