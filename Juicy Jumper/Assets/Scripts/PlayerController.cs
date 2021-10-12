@@ -28,12 +28,13 @@ public class PlayerController : MonoBehaviour
     private const string FOREGROUND = "Foreground"; //LayerMask.GetMask()
 
     //script variables
-    private bool isJumping = false;
+    private bool isJumpingAnimation = false;
+    private bool isJumpingPhysically = false;
     private float faceRight = 1f;
     private float moveHorizontal;
     private float moveVertical;
     private float jumpVertical;
-    private bool moveDiagonal;
+    private bool waveDashButtonDown;
     private bool waveDashState = false;
 
     // Start is called before the first frame update
@@ -50,13 +51,12 @@ public class PlayerController : MonoBehaviour
         moveHorizontal = Input.GetAxisRaw("Horizontal");
         moveVertical = Input.GetAxisRaw("Vertical");
         jumpVertical = Input.GetAxisRaw("Jump");
-        moveDiagonal = Input.GetButtonDown("Fire1");
+        if (Input.GetButtonDown("Fire1")) { waveDashButtonDown = true; }
 
         RunningAnimation(moveHorizontal);
         JumpAnimation(jumpVertical); //Handles Jump and Land Animations
         LimitSpeed(speedLimit);
-
-        if (moveDiagonal) { WaveDash(moveHorizontal, moveVertical); }
+        OnLand();
     }
 
     private void FixedUpdate()
@@ -68,11 +68,17 @@ public class PlayerController : MonoBehaviour
             FallFast(fallVelocity);
             FastFall(fastFallSpeed);
         }
+
+        if (waveDashButtonDown) 
+        { 
+            WaveDash(moveHorizontal, moveVertical);
+            waveDashButtonDown = false;
+        }
     }
 
     private void FallFast(float fallVelocity) //determines general falling speed
     {
-        if(isJumping == true && myRigidBody.velocity.y <= 0)
+        if(isJumpingAnimation == true && myRigidBody.velocity.y <= 0)
         {
             myRigidBody.AddForce(new Vector2(0f, -fallVelocity), ForceMode2D.Force);
         }
@@ -80,7 +86,7 @@ public class PlayerController : MonoBehaviour
 
     private void FastFall(float fastFallSpeed) //determines fast fall speed when pressing down key (akin to Melee)
     {
-        if(isJumping == true && myRigidBody.velocity.y < 0 && moveVertical < 0)
+        if(isJumpingAnimation == true && myRigidBody.velocity.y < 0 && moveVertical < 0)
         {
             myRigidBody.AddForce(new Vector2(0f, -fastFallSpeed), ForceMode2D.Impulse);
         }
@@ -110,9 +116,9 @@ public class PlayerController : MonoBehaviour
         {
             animator.SetBool(IS_RUNNING, false);
             animator.SetTrigger(IS_JUMPING);
-            isJumping = true;
+            isJumpingAnimation = true;
         }
-        else if (myRigidBody.velocity.y == 0 && isJumping == true)
+        else if (myRigidBody.velocity.y == 0 && isJumpingAnimation == true)
         {
             LandAnimation();
         }
@@ -122,24 +128,24 @@ public class PlayerController : MonoBehaviour
     {
         animator.SetTrigger(IS_LANDING);
         animator.ResetTrigger(IS_JUMPING);
-        isJumping = false;
+        isJumpingAnimation = false;
     }
 
     private void PlayerMoveHorizontal(float input)
     {
-        if (input > 0 && isJumping == false)
+        if (input > 0 && isJumpingAnimation == false)
         {
             myRigidBody.AddForce(new Vector2(groundMoveSpeed, 0f), ForceMode2D.Force);
         }
-        else if (input < 0 && isJumping == false)
+        else if (input < 0 && isJumpingAnimation == false)
         {
             myRigidBody.AddForce(new Vector2(-groundMoveSpeed, 0f), ForceMode2D.Force);
         }
-        else if (input > 0 && isJumping == true)
+        else if (input > 0 && isJumpingAnimation == true)
         {
             myRigidBody.AddForce(new Vector2(aerialMobility, 0f), ForceMode2D.Force);
         }
-        else if (input < 0 && isJumping == true)
+        else if (input < 0 && isJumpingAnimation == true)
         {
             myRigidBody.AddForce(new Vector2(-aerialMobility, 0f), ForceMode2D.Force);
         }
@@ -180,12 +186,21 @@ public class PlayerController : MonoBehaviour
         if(input > 0 && myBoxCollider.IsTouchingLayers(LayerMask.GetMask(FOREGROUND)))
         {
             myRigidBody.AddForce(new Vector2(0f, jumpHeight), ForceMode2D.Impulse);
+            isJumpingPhysically = true;
+        }
+    }
+
+    private void OnLand()
+    {
+        if(isJumpingPhysically == true && myBoxCollider.IsTouchingLayers(LayerMask.GetMask(FOREGROUND)))
+        {
+            isJumpingPhysically = false;
         }
     }
 
     private void WaveDash(float inputX, float inputY)
     {
-        if(isJumping == true)
+        if(isJumpingPhysically == true)
         {
             if(inputX > 0 && inputY < 0)
             {
@@ -193,7 +208,6 @@ public class PlayerController : MonoBehaviour
                 myBoxCollider.sharedMaterial.friction = slidyness;
                 myBoxCollider.enabled = false;
                 myBoxCollider.enabled = true;
-                //myRigidBody.velocity = new Vector2(0f, 0f);
                 myRigidBody.AddForce(new Vector2(waveDashForce, -waveDashForce), ForceMode2D.Impulse);
                 StartCoroutine(WaveDashLag());
             }
@@ -203,7 +217,6 @@ public class PlayerController : MonoBehaviour
                 myBoxCollider.sharedMaterial.friction = slidyness;
                 myBoxCollider.enabled = false;
                 myBoxCollider.enabled = true;
-                //myRigidBody.velocity = new Vector2(0f, 0f);
                 myRigidBody.AddForce(new Vector2(-waveDashForce, -waveDashForce), ForceMode2D.Impulse);
                 StartCoroutine(WaveDashLag());
             }

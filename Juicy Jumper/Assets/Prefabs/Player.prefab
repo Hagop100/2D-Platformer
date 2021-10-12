@@ -120,7 +120,7 @@ MonoBehaviour:
   speedLimit: 9
   fallVelocity: 30
   fastFallSpeed: 3
-  waveDashForce: 100
+  waveDashForce: 20
   slidyness: 0
   defaultFriction: 10
   dustParticle: {fileID: 3698900564915667664}
