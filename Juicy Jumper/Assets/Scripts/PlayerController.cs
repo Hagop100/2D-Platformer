@@ -29,11 +29,10 @@ public class PlayerController : MonoBehaviour
 
     //script variables
     private bool isJumpingAnimation = false;
-    private bool isJumpingPhysically = false;
     private float faceRight = 1f;
     private float moveHorizontal;
     private float moveVertical;
-    private float jumpVertical;
+    private bool jumpVertical = false;
     private bool waveDashButtonDown;
     private bool waveDashState = false;
 
@@ -50,13 +49,12 @@ public class PlayerController : MonoBehaviour
     {
         moveHorizontal = Input.GetAxisRaw("Horizontal");
         moveVertical = Input.GetAxisRaw("Vertical");
-        jumpVertical = Input.GetAxisRaw("Jump");
+        if (Input.GetButtonDown("Jump")) { jumpVertical = true; }
         if (Input.GetButtonDown("Fire1")) { waveDashButtonDown = true; }
 
         RunningAnimation(moveHorizontal);
         JumpAnimation(jumpVertical); //Handles Jump and Land Animations
         LimitSpeed(speedLimit);
-        OnLand();
     }
 
     private void FixedUpdate()
@@ -64,7 +62,11 @@ public class PlayerController : MonoBehaviour
         if (waveDashState == false)
         {
             PlayerMoveHorizontal(moveHorizontal);
-            Jump(jumpVertical);
+            if (jumpVertical)
+            {
+                Jump();
+                jumpVertical = false;
+            }
             FallFast(fallVelocity);
             FastFall(fastFallSpeed);
         }
@@ -110,9 +112,9 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void JumpAnimation(float input)
+    private void JumpAnimation(bool input)
     {
-        if(input > 0)
+        if(input == true)
         {
             animator.SetBool(IS_RUNNING, false);
             animator.SetTrigger(IS_JUMPING);
@@ -181,26 +183,17 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void Jump(float input)
+    private void Jump()
     {
-        if(input > 0 && myBoxCollider.IsTouchingLayers(LayerMask.GetMask(FOREGROUND)))
+        if(myBoxCollider.IsTouchingLayers(LayerMask.GetMask(FOREGROUND)))
         {
             myRigidBody.AddForce(new Vector2(0f, jumpHeight), ForceMode2D.Impulse);
-            isJumpingPhysically = true;
-        }
-    }
-
-    private void OnLand()
-    {
-        if(isJumpingPhysically == true && myBoxCollider.IsTouchingLayers(LayerMask.GetMask(FOREGROUND)))
-        {
-            isJumpingPhysically = false;
         }
     }
 
     private void WaveDash(float inputX, float inputY)
     {
-        if(isJumpingPhysically == true)
+        if(!myBoxCollider.IsTouchingLayers(LayerMask.GetMask(FOREGROUND)))
         {
             if(inputX > 0 && inputY < 0)
             {
@@ -225,7 +218,7 @@ public class PlayerController : MonoBehaviour
 
     IEnumerator WaveDashLag()
     {
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(0.2f);
         myBoxCollider.sharedMaterial.friction = defaultFriction;
         myBoxCollider.enabled = false;
         myBoxCollider.enabled = true;

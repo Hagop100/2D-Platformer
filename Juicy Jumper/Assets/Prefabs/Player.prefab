@@ -116,7 +116,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   groundMoveSpeed: 150
   aerialMobility: 40
-  jumpHeight: 5
+  jumpHeight: 8
   speedLimit: 9
   fallVelocity: 30
   fastFallSpeed: 3
