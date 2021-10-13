@@ -16,10 +16,22 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float defaultFriction = 10f;
     [SerializeField] private ParticleSystem dustParticle;
 
-    //cache
+    //Cache Variables
     private Rigidbody2D myRigidBody;
     private Animator animator;
     private BoxCollider2D myBoxCollider;
+
+    private Vector2 fallFastVector;
+    private Vector2 fastFallVector;
+    private Vector2 groundMoveVectorRight;
+    private Vector2 groundMoveVectorLeft;
+    private Vector2 aerialMoveVectorRight;
+    private Vector2 aerialMoveVectorLeft;
+    private Vector2 faceRightVector;
+    private Vector2 faceLeftVector;
+    private Vector2 jumpHeightVector;
+    private Vector2 waveDashForceVectorRight;
+    private Vector2 waveDashForceVectorLeft;
 
     //constant String references
     private const string IS_RUNNING = "isRunning"; //Animator bool for running animation
@@ -35,6 +47,7 @@ public class PlayerController : MonoBehaviour
     private bool jumpVertical = false;
     private bool waveDashButtonDown;
     private bool waveDashState = false;
+    private WaitForSeconds waveDashDelay = new WaitForSeconds(0.2f);
 
     // Start is called before the first frame update
     void Start()
@@ -42,6 +55,7 @@ public class PlayerController : MonoBehaviour
         myRigidBody = this.GetComponent<Rigidbody2D>();
         animator = this.GetComponent<Animator>();
         myBoxCollider = this.GetComponent<BoxCollider2D>();
+        VectorCache();
     }
 
     // Update is called once per frame
@@ -82,7 +96,7 @@ public class PlayerController : MonoBehaviour
     {
         if(isJumpingAnimation == true && myRigidBody.velocity.y <= 0)
         {
-            myRigidBody.AddForce(new Vector2(0f, -fallVelocity), ForceMode2D.Force);
+            myRigidBody.AddForce(fallFastVector, ForceMode2D.Force);
         }
     }
 
@@ -90,7 +104,7 @@ public class PlayerController : MonoBehaviour
     {
         if(isJumpingAnimation == true && myRigidBody.velocity.y < 0 && moveVertical < 0)
         {
-            myRigidBody.AddForce(new Vector2(0f, -fastFallSpeed), ForceMode2D.Impulse);
+            myRigidBody.AddForce(fastFallVector, ForceMode2D.Impulse);
         }
     }
 
@@ -137,19 +151,19 @@ public class PlayerController : MonoBehaviour
     {
         if (input > 0 && isJumpingAnimation == false)
         {
-            myRigidBody.AddForce(new Vector2(groundMoveSpeed, 0f), ForceMode2D.Force);
+            myRigidBody.AddForce(groundMoveVectorRight, ForceMode2D.Force);
         }
         else if (input < 0 && isJumpingAnimation == false)
         {
-            myRigidBody.AddForce(new Vector2(-groundMoveSpeed, 0f), ForceMode2D.Force);
+            myRigidBody.AddForce(groundMoveVectorLeft, ForceMode2D.Force);
         }
         else if (input > 0 && isJumpingAnimation == true)
         {
-            myRigidBody.AddForce(new Vector2(aerialMobility, 0f), ForceMode2D.Force);
+            myRigidBody.AddForce(aerialMoveVectorRight, ForceMode2D.Force);
         }
         else if (input < 0 && isJumpingAnimation == true)
         {
-            myRigidBody.AddForce(new Vector2(-aerialMobility, 0f), ForceMode2D.Force);
+            myRigidBody.AddForce(aerialMoveVectorLeft, ForceMode2D.Force);
         }
     }
 
@@ -169,17 +183,17 @@ public class PlayerController : MonoBehaviour
     {
         if(input > 0)
         {
-            this.transform.localScale = new Vector2(faceRight, 1f);
+            this.transform.localScale = faceRightVector;
             dustParticle.Play();
         }
         else if(input < 0)
         {
-            this.transform.localScale = new Vector2(-faceRight, 1f);
+            this.transform.localScale = faceLeftVector;
             dustParticle.Play();
         }
         else
         {
-            this.transform.localScale = new Vector2(faceRight, 1f);
+            this.transform.localScale = faceRightVector;
         }
     }
 
@@ -187,7 +201,7 @@ public class PlayerController : MonoBehaviour
     {
         if(myBoxCollider.IsTouchingLayers(LayerMask.GetMask(FOREGROUND)))
         {
-            myRigidBody.AddForce(new Vector2(0f, jumpHeight), ForceMode2D.Impulse);
+            myRigidBody.AddForce(jumpHeightVector, ForceMode2D.Impulse);
         }
     }
 
@@ -201,7 +215,7 @@ public class PlayerController : MonoBehaviour
                 myBoxCollider.sharedMaterial.friction = slidyness;
                 myBoxCollider.enabled = false;
                 myBoxCollider.enabled = true;
-                myRigidBody.AddForce(new Vector2(waveDashForce, -waveDashForce), ForceMode2D.Impulse);
+                myRigidBody.AddForce(waveDashForceVectorRight, ForceMode2D.Impulse);
                 StartCoroutine(WaveDashLag());
             }
             else if(inputX < 0 && inputY < 0)
@@ -210,7 +224,7 @@ public class PlayerController : MonoBehaviour
                 myBoxCollider.sharedMaterial.friction = slidyness;
                 myBoxCollider.enabled = false;
                 myBoxCollider.enabled = true;
-                myRigidBody.AddForce(new Vector2(-waveDashForce, -waveDashForce), ForceMode2D.Impulse);
+                myRigidBody.AddForce(waveDashForceVectorLeft, ForceMode2D.Impulse);
                 StartCoroutine(WaveDashLag());
             }
         } 
@@ -218,10 +232,25 @@ public class PlayerController : MonoBehaviour
 
     IEnumerator WaveDashLag()
     {
-        yield return new WaitForSeconds(0.2f);
+        yield return waveDashDelay;
         myBoxCollider.sharedMaterial.friction = defaultFriction;
         myBoxCollider.enabled = false;
         myBoxCollider.enabled = true;
         waveDashState = false;
+    }
+
+    private void VectorCache()
+    {
+        fallFastVector = new Vector2(0f, -fallVelocity);
+        fastFallVector = new Vector2(0f, -fastFallSpeed);
+        groundMoveVectorRight = new Vector2(groundMoveSpeed, 0f);
+        groundMoveVectorLeft = new Vector2(-groundMoveSpeed, 0f);
+        aerialMoveVectorRight = new Vector2(aerialMobility, 0f);
+        aerialMoveVectorLeft = new Vector2(-aerialMobility, 0f);
+        faceRightVector = new Vector2(faceRight, 1f);
+        faceLeftVector = new Vector2(-faceRight, 1f);
+        jumpHeightVector = new Vector2(0f, jumpHeight);
+        waveDashForceVectorRight = new Vector2(waveDashForce, -waveDashForce);
+        waveDashForceVectorLeft = new Vector2(-waveDashForce, -waveDashForce);
     }
 }
