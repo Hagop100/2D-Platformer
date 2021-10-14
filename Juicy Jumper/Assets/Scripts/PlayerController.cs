@@ -20,6 +20,7 @@ public class PlayerController : MonoBehaviour
     private Rigidbody2D myRigidBody;
     private Animator animator;
     private BoxCollider2D myBoxCollider;
+    //private CapsuleCollider2D myCapsuleCollider;
 
     private Vector2 fallFastVector;
     private Vector2 fastFallVector;
@@ -49,13 +50,19 @@ public class PlayerController : MonoBehaviour
     private bool waveDashState = false;
     private WaitForSeconds waveDashDelay = new WaitForSeconds(0.2f);
 
+    private void Awake()
+    {
+        VectorCache();
+    }
+
     // Start is called before the first frame update
     void Start()
     {
         myRigidBody = this.GetComponent<Rigidbody2D>();
         animator = this.GetComponent<Animator>();
         myBoxCollider = this.GetComponent<BoxCollider2D>();
-        VectorCache();
+        Debug.Log(Mathf.Epsilon);
+        //myCapsuleCollider = this.GetComponent<CapsuleCollider2D>();
     }
 
     // Update is called once per frame
@@ -69,6 +76,8 @@ public class PlayerController : MonoBehaviour
         RunningAnimation(moveHorizontal);
         JumpAnimation(jumpVertical); //Handles Jump and Land Animations
         LimitSpeed(speedLimit);
+
+        Debug.Log(myRigidBody.velocity.y <= 0.0001f);
     }
 
     private void FixedUpdate()
@@ -120,7 +129,7 @@ public class PlayerController : MonoBehaviour
         }
         FlipPlayer(input);
 
-        if(myRigidBody.velocity.y != 0)
+        if(Mathf.Abs(myRigidBody.velocity.y) > 0.0001f)
         {
             animator.SetBool(IS_RUNNING, false);
         }
@@ -134,7 +143,7 @@ public class PlayerController : MonoBehaviour
             animator.SetTrigger(IS_JUMPING);
             isJumpingAnimation = true;
         }
-        else if (myRigidBody.velocity.y == 0 && isJumpingAnimation == true)
+        else if (Mathf.Abs(myRigidBody.velocity.y) < 0.0001f && isJumpingAnimation == true)
         {
             LandAnimation();
         }
@@ -145,6 +154,7 @@ public class PlayerController : MonoBehaviour
         animator.SetTrigger(IS_LANDING);
         animator.ResetTrigger(IS_JUMPING);
         isJumpingAnimation = false;
+        dustParticle.Play();
     }
 
     private void PlayerMoveHorizontal(float input)
@@ -152,10 +162,12 @@ public class PlayerController : MonoBehaviour
         if (input > 0 && isJumpingAnimation == false)
         {
             myRigidBody.AddForce(groundMoveVectorRight, ForceMode2D.Force);
+            dustParticle.Play();
         }
         else if (input < 0 && isJumpingAnimation == false)
         {
             myRigidBody.AddForce(groundMoveVectorLeft, ForceMode2D.Force);
+            dustParticle.Play();
         }
         else if (input > 0 && isJumpingAnimation == true)
         {
@@ -184,12 +196,10 @@ public class PlayerController : MonoBehaviour
         if(input > 0)
         {
             this.transform.localScale = faceRightVector;
-            dustParticle.Play();
         }
         else if(input < 0)
         {
             this.transform.localScale = faceLeftVector;
-            dustParticle.Play();
         }
         else
         {
