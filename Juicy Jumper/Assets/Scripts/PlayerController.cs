@@ -50,18 +50,13 @@ public class PlayerController : MonoBehaviour
     private bool waveDashState = false;
     private WaitForSeconds waveDashDelay = new WaitForSeconds(0.2f);
 
-    private void Awake()
-    {
-        VectorCache();
-    }
-
     // Start is called before the first frame update
     void Start()
     {
         myRigidBody = this.GetComponent<Rigidbody2D>();
         animator = this.GetComponent<Animator>();
         myBoxCollider = this.GetComponent<BoxCollider2D>();
-        Debug.Log(Mathf.Epsilon);
+        VectorCache();
         //myCapsuleCollider = this.GetComponent<CapsuleCollider2D>();
     }
 
@@ -76,8 +71,6 @@ public class PlayerController : MonoBehaviour
         RunningAnimation(moveHorizontal);
         JumpAnimation(jumpVertical); //Handles Jump and Land Animations
         LimitSpeed(speedLimit);
-
-        Debug.Log(myRigidBody.velocity.y <= 0.0001f);
     }
 
     private void FixedUpdate()
@@ -90,8 +83,8 @@ public class PlayerController : MonoBehaviour
                 Jump();
                 jumpVertical = false;
             }
-            FallFast(fallVelocity);
-            FastFall(fastFallSpeed);
+            FallFast();
+            FastFall();
         }
 
         if (waveDashButtonDown) 
@@ -101,17 +94,17 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void FallFast(float fallVelocity) //determines general falling speed
+    private void FallFast() //determines general falling speed
     {
-        if(isJumpingAnimation == true && myRigidBody.velocity.y <= 0)
+        if(!myBoxCollider.IsTouchingLayers(LayerMask.GetMask(FOREGROUND)) && myRigidBody.velocity.y <= 0)
         {
             myRigidBody.AddForce(fallFastVector, ForceMode2D.Force);
         }
     }
 
-    private void FastFall(float fastFallSpeed) //determines fast fall speed when pressing down key (akin to Melee)
+    private void FastFall() //determines fast fall speed when pressing down key (akin to Melee)
     {
-        if(isJumpingAnimation == true && myRigidBody.velocity.y < 0 && moveVertical < 0)
+        if(!myBoxCollider.IsTouchingLayers(LayerMask.GetMask(FOREGROUND)) && myRigidBody.velocity.y < 0 && moveVertical < 0)
         {
             myRigidBody.AddForce(fastFallVector, ForceMode2D.Impulse);
         }
@@ -155,6 +148,20 @@ public class PlayerController : MonoBehaviour
         animator.ResetTrigger(IS_JUMPING);
         isJumpingAnimation = false;
         dustParticle.Play();
+    }
+
+    private void FallingAnimation()
+    {
+        if(!myBoxCollider.IsTouchingLayers(LayerMask.GetMask(FOREGROUND)) && isJumpingAnimation == false)
+        {
+            animator.SetBool(IS_RUNNING, false);
+            animator.SetTrigger(IS_JUMPING);
+            isJumpingAnimation = true;
+        }
+        else if (Mathf.Abs(myRigidBody.velocity.y) < 0.0001f && isJumpingAnimation == true)
+        {
+            LandAnimation();
+        }
     }
 
     private void PlayerMoveHorizontal(float input)
