@@ -15,12 +15,14 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float slidyness = 2f;
     [SerializeField] private float defaultFriction = 10f;
     [SerializeField] private ParticleSystem dustParticle;
+    [SerializeField] private AudioClip waveDashAudioClip;
+    [SerializeField] private AudioClip walkingAudioClip;
 
     //Cache Variables
     private Rigidbody2D myRigidBody;
     private Animator animator;
     private BoxCollider2D myBoxCollider;
-    //private CapsuleCollider2D myCapsuleCollider;
+    private AudioSource myAudioSource;
 
     private Vector2 fallFastVector;
     private Vector2 fastFallVector;
@@ -56,8 +58,8 @@ public class PlayerController : MonoBehaviour
         myRigidBody = this.GetComponent<Rigidbody2D>();
         animator = this.GetComponent<Animator>();
         myBoxCollider = this.GetComponent<BoxCollider2D>();
+        myAudioSource = this.GetComponent<AudioSource>();
         VectorCache();
-        //myCapsuleCollider = this.GetComponent<CapsuleCollider2D>();
     }
 
     // Update is called once per frame
@@ -130,13 +132,13 @@ public class PlayerController : MonoBehaviour
 
     private void JumpAnimation(bool input)
     {
-        if(input == true)
+        if(input == true || myRigidBody.velocity.y < -0.1f)
         {
             animator.SetBool(IS_RUNNING, false);
             animator.SetTrigger(IS_JUMPING);
             isJumpingAnimation = true;
         }
-        else if (Mathf.Abs(myRigidBody.velocity.y) < 0.0001f && isJumpingAnimation == true)
+        else if (Mathf.Abs(myRigidBody.velocity.y) < 0.0001f && isJumpingAnimation == true && myBoxCollider.IsTouchingLayers(LayerMask.GetMask(FOREGROUND)))
         {
             LandAnimation();
         }
@@ -148,20 +150,7 @@ public class PlayerController : MonoBehaviour
         animator.ResetTrigger(IS_JUMPING);
         isJumpingAnimation = false;
         dustParticle.Play();
-    }
-
-    private void FallingAnimation()
-    {
-        if(!myBoxCollider.IsTouchingLayers(LayerMask.GetMask(FOREGROUND)) && isJumpingAnimation == false)
-        {
-            animator.SetBool(IS_RUNNING, false);
-            animator.SetTrigger(IS_JUMPING);
-            isJumpingAnimation = true;
-        }
-        else if (Mathf.Abs(myRigidBody.velocity.y) < 0.0001f && isJumpingAnimation == true)
-        {
-            LandAnimation();
-        }
+        if (waveDashState) { myAudioSource.PlayOneShot(waveDashAudioClip, 0.05f); }
     }
 
     private void PlayerMoveHorizontal(float input)
@@ -254,6 +243,8 @@ public class PlayerController : MonoBehaviour
         myBoxCollider.enabled = false;
         myBoxCollider.enabled = true;
         waveDashState = false;
+        animator.ResetTrigger(IS_LANDING);
+        animator.ResetTrigger(IS_JUMPING);
     }
 
     private void VectorCache()
